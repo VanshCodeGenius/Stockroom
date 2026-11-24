@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stockroom - Business Inventory</title>
+  <style>
+    :root {
+      --ink: #17211b;
+      --muted: #6f786f;
+      --line: #e6ebe7;
+      --paper: #ffffff;
+      --cream: #f5f7f3;
+      --green: #205a40;
+      --green-2: #dcecdf;
+      --lime: #a8c97f;
+      --orange: #d68a45;
+      --red: #ba584b;
+      --shadow: 0 12px 32px rgba(31, 52, 40, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--cream);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh;
+      display: flex; flex-direction: column;
+      padding: 28px 18px 20px;
+      background: var(--paper); border-right: 1px solid var(--line);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 10px 28px; font-size: 20px; font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 11px;
+      display: grid; place-items: center; color: white;
+      background: var(--green); box-shadow: 0 7px 16px rgba(32,90,64,.18);
+    }
+    .nav { display: grid; gap: 5px; }
+    .nav button {
+      border: 0; border-radius: 9px; background: transparent;
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 12px; color: #687168; text-align: left;
+      font-weight: 650;
+    }
+    .nav button.active { background: var(--green-2); color: var(--green); }
+    .nav svg { width: 18px; height: 18px; }
+    .store-card {
+      margin-top: auto; padding: 13px;
+      border: 1px solid var(--line); border-radius: 12px;
+      background: #fbfcfb;
+    }
+    .store-card strong { display: block; font-size: 13px; }
+    .store-card span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+    main { min-width: 0; padding: 28px 34px 44px; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    h1 { margin: 0; font-size: 27px; letter-spacing: -1px; }
+    .top-actions { display: flex; gap: 9px; }
+    .btn {
+      height: 40px; border: 1px solid var(--line); border-radius: 9px;
+      padding: 0 14px; background: white; color: var(--ink);
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-weight: 700;
+    }
+    .btn.primary { border-color: var(--green); background: var(--green); color: white; }
+    .btn.danger { color: var(--red); }
+    .btn.small { height: 34px; padding: 0 10px; font-size: 13px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .metric {
+      min-height: 118px; padding: 18px;
+      background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    }
+    .metric-label { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .metric-value { margin-top: 11px; font-size: 25px; font-weight: 800; letter-spacing: -1px; }
+    .metric-note { margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .metric-note.good { color: var(--green); }
+    .metric-note.warn { color: var(--orange); }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, .85fr); gap: 14px; margin-top: 14px; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+    .panel-head {
+      height: 58px; padding: 0 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-head h2 { margin: 0; font-size: 15px; }
+    .chart-wrap { height: 250px; padding: 18px 18px 10px; }
+    .chart-wrap svg { width: 100%; height: 100%; overflow: visible; }
+    .chart-label { fill: #90998f; font-size: 11px; }
+    .activity { padding: 5px 18px 12px; }
+    .activity-row {
+      display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
+      align-items: center; gap: 10px; padding: 10px 0;
+      border-bottom: 1px solid #eff2ef;
+    }
+    .activity-row:last-child { border-bottom: 0; }
+    .activity-icon {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: grid; place-items: center; font-size: 13px;
+      background: var(--green-2); color: var(--green);
+    }
+    .activity-row small { display: block; color: var(--muted); margin-top: 3px; }
+    .amount { font-weight: 800; font-size: 13px; }
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 16px 0 12px;
+    }
+    .search {
+      width: 260px; height: 40px; border: 1px solid var(--line); border-radius: 9px;
+      background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2390998f' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 12px center;
+      padding: 0 12px 0 38px; outline: none;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th {
+      height: 42px; padding: 0 14px; text-align: left;
+      color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--line);
+    }
+    td { height: 68px; padding: 0 14px; border-bottom: 1px solid #eff2ef; font-size: 13px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .item-cell { display: flex; align-items: center; gap: 10px; }
+    .item-avatar {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: grid; place-items: center;
+      background: #edf1ea; color: var(--green); font-weight: 800;
+    }
+    .item-cell strong { display: block; }
+    .item-cell small { color: var(--muted); }
+    .badge { display: inline-flex; padding: 5px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .badge.ok { background: var(--green-2); color: var(--green); }
+    .badge.low { background: #fff0de; color: #9d6429; }
+    .badge.out { background: #f8e8e5; color: var(--red); }
+    .row-actions { display: flex; justify-content: flex-end; gap: 5px; }
+    .icon-btn {
+      width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px;
+      background: white; color: var(--muted);
+    }
+    .dialog-backdrop {
+      position: fixed; inset: 0; z-index: 20;
+      display: none; place-items: center; padding: 20px;
+      background: rgba(20, 31, 24, .38); backdrop-filter: blur(3px);
+    }
+    .dialog-backdrop.open { display: grid; }
+    .dialog {
+      width: min(520px, 100%); max-height: 92vh; overflow-y: auto;
+      border-radius: 16px; background: white; box-shadow: 0 24px 70px rgba(20,31,24,.22);
+    }
+    .dialog-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px; border-bottom: 1px solid var(--line);
+    }
+    .dialog-head h2 { margin: 0; font-size: 18px; }
+    .close { border: 0; background: transparent; color: var(--muted); font-size: 20px; }
+    form { padding: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field.full { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 7px; color: #5d665e; font-size: 12px; font-weight: 800; }
+    input, select {
+      width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 9px;
+      background: white; padding: 0 11px; color: var(--ink); outline: none;
+    }
+    input:focus, select:focus { border-color: #87a993; box-shadow: 0 0 0 3px rgba(32,90,64,.08); }
+    .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .empty { padding: 36px; text-align: center; color: var(--muted); }
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 74px minmax(0,1fr); }
+      .sidebar { padding: 22px 10px; }
+      .brand { justify-content: center; padding-inline: 0; }
+      .brand span, .nav button span, .store-card { display: none; }
+      .nav button { justify-content: center; padding: 12px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .app { display: block; }
+      .sidebar {
+        position: fixed; z-index: 10; top: auto; bottom: 0; width: 100%; height: 62px;
+        padding: 7px 8px; border-top: 1px solid var(--line); border-right: 0;
+      }
+      .brand { display: none; }
+      .nav { display: grid !important; grid-template-columns: repeat(4, 1fr); }
+      .nav button { flex-direction: column; gap: 2px; font-size: 10px; padding: 5px; }
+      .nav button span { display: block; }
+      main { padding: 20px 14px 82px; }
+      .topbar { align-items: flex-start; }
+      h1 { font-size: 23px; }
+      .top-actions .btn span { display: none; }
+      .metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .metric { min-height: 104px; padding: 14px; }
+      .metric-value { font-size: 20px; }
+      .toolbar { align-items: stretch; }
+      .search { width: 100%; max-width: 280px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">S</div><span>Stockroom</span></div>
+      <nav class="nav">
+        <button class="active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button data-view="inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 8-9 5-9-5"/><path d="M3 8l9-5 9 5v8l-9 5-9-5Z"/></svg>
+          <span>Inventory</span>
+        </button>
+        <button data-view="purchases">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l2.5 11h10l2-7H6"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>
+          <span>Purchases</span>
+        </button>
+        <button data-view="sales">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v9h20V9a2 2 0 0 0-2-2Z"/><path d="M16 7V5H8v2M2 12h20"/></svg>
+          <span>Sales</span>
+        </button>
+      </nav>
+      <div class="store-card"><strong>Main Store</strong><span>Business workspace</span></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="top-actions">
+          <button class="btn" id="resetBtn" title="Restore demo data"><span>Reset</span></button>
+          <button class="btn primary" id="mainAction"><span>+ Add item</span></button>
+        </div>
+      </header>
+
+      <section class="view active" id="dashboard">
+        <div class="metrics" id="metrics"></div>
+        <div class="grid">
+          <div class="panel">
+            <div class="panel-head"><h2>Sales overview</h2><span class="metric-label">Last 7 days</span></div>
+            <div class="chart-wrap" id="chart"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Recent activity</h2></div>
+            <div class="activity" id="activity"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="inventory">
+        <div class="toolbar">
+          <input class="search" id="inventorySearch" placeholder="Search inventory" />
+        </div>
+        <div class="panel table-wrap"><table>
+          <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Unit cost</th><th>Sale price</th><th>Status</th><th></th></tr></thead>
+          <tbody id="inventoryBody"></tbody>
+        </table></div>
+      </section>
+
+      <section class="view" id="purchases">
+        <div class="toolbar"><div></div></div>
+        <div class="panel table-wrap"><table>
+          <thead><tr><th>Purchase</th><th>Item</th><th>Quantity</th><th>Total cost</th><th>Date</th><th></th></tr></thead>
+          <tbody id="purchasesBody"></tbody>
+        </table></div>
+      </section>
+
+      <section class="view" id="sales">
+        <div class="toolbar"><div></div></div>
+        <div class="panel table-wrap"><table>
+          <thead><tr><th>Sale</th><th>Item</th><th>Quantity</th><th>Revenue</th><th>Profit</th><th>Date</th><th></th></tr></thead>
+          <tbody id="salesBody"></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="dialog-backdrop" id="dialogBackdrop">
+    <div class="dialog">
+      <div class="dialog-head"><h2 id="dialogTitle">Add item</h2><button class="close" id="closeDialog" aria-label="Close">&times;</button></div>
+      <form id="dialogForm"></form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "stockroom-app-v1";
+    const demo = {
+      items: [
+        { id: "i1", name: "Organic Candle", sku: "CAN-001", category: "Home", stock: 42, reorder: 10, unitCost: 8.50, price: 24.00 },
+        { id: "i2", name: "Canvas Tote", sku: "TOT-014", category: "Accessories", stock: 18, reorder: 8, unitCost: 6.25, price: 18.50 },
+        { id: "i3", name: "Ceramic Mug", sku: "MUG-003", category: "Kitchen", stock: 7, reorder: 10, unitCost: 5.40, price: 16.00 },
+        { id: "i4", name: "Wildflower Soap", sku: "SOAP-008", category: "Bath", stock: 31, reorder: 12, unitCost: 3.10, price: 9.50 },
+        { id: "i5", name: "Linen Notebook", sku: "NOTE-022", category: "Stationery", stock: 0, reorder: 8, unitCost: 7.20, price: 21.00 }
+      ],
+      purchases: [
+        { id: "p1", name: "Candle wax & jars", itemId: "i1", quantity: 24, total: 204, date: "2026-11-21" },
+        { id: "p2", name: "Cotton tote restock", itemId: "i2", quantity: 20, total: 125, date: "2026-11-19" }
+      ],
+      sales: [
+        { id: "s1", itemId: "i1", quantity: 4, revenue: 96, cost: 34, date: "2026-11-24" },
+        { id: "s2", itemId: "i2", quantity: 3, revenue: 55.5, cost: 18.75, date: "2026-11-23" },
+        { id: "s3", itemId: "i4", quantity: 8, revenue: 76, cost: 24.8, date: "2026-11-22" },
+        { id: "s4", itemId: "i3", quantity: 2, revenue: 32, cost: 10.8, date: "2026-11-21" }
+      ]
+    };
+    let data = load();
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(demo); }
+      catch { return structuredClone(demo); }
+    }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); render(); }
+    function money(n) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n); }
+    function itemName(id) { return data.items.find(i => i.id === id)?.name || "Unknown item"; }
+
+    function render() {
+      renderMetrics();
+      renderChart();
+      renderActivity();
+      renderInventory();
+      renderPurchases();
+      renderSales();
+    }
+
+    function renderMetrics() {
+      const revenue = data.sales.reduce((a, s) => a + s.revenue, 0);
+      const salesCost = data.sales.reduce((a, s) => a + s.cost, 0);
+      const purchaseCost = data.purchases.reduce((a, p) => a + p.total, 0);
+      const profit = revenue - salesCost;
+      const stockValue = data.items.reduce((a, i) => a + i.stock * i.unitCost, 0);
+      const low = data.items.filter(i => i.stock <= i.reorder).length;
+      document.getElementById("metrics").innerHTML = `
+        <div class="metric"><div class="metric-label">Total revenue</div><div class="metric-value">${money(revenue)}</div><div class="metric-note good">Across ${data.sales.length} sales</div></div>
+        <div class="metric"><div class="metric-label">Net profit</div><div class="metric-value">${money(profit)}</div><div class="metric-note good">${revenue ? ((profit/revenue)*100).toFixed(1) : "0"}% margin</div></div>
+        <div class="metric"><div class="metric-label">Inventory value</div><div class="metric-value">${money(stockValue)}</div><div class="metric-note">${data.items.reduce((a,i)=>a+i.stock,0)} units on hand</div></div>
+        <div class="metric"><div class="metric-label">Low stock</div><div class="metric-value">${low}</div><div class="metric-note warn">${low ? "Needs attention" : "Stock levels healthy"}</div></div>`;
+    }
+
+    function renderChart() {
+      const totals = [0,0,0,0,0,0,0];
+      data.sales.forEach(s => {
+        const day = new Date(s.date + "T12:00:00").getDay();
+        const index = (day + 6) % 7;
+        totals[index] += s.revenue;
+      });
+      const labels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      const max = Math.max(...totals, 100);
+      const points = totals.map((v,i) => [35+i*55, 205-(v/max*165)]);
+      const line = points.map(p => p.join(",")).join(" ");
+      const area = `35,205 ${line} 365,205`;
+      document.getElementById("chart").innerHTML = `
+        <svg viewBox="0 0 400 230" preserveAspectRatio="none">
+          ${[40,105,170].map(y=>`<line x1="35" x2="365" y1="${y}" y2="${y}" stroke="#edf1ed"/>`).join("")}
+          <polygon points="${area}" fill="#dcecdf" opacity=".7"/>
+          <polyline points="${line}" fill="none" stroke="#205a40" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#205a40"/><text class="chart-label" x="${p[0]}" y="225" text-anchor="middle">${labels[i]}</text>`).join("")}
+        </svg>`;
+    }
+
+    function renderActivity() {
+      const events = [
+        ...data.sales.map(s => ({ type: "sale", title: itemName(s.itemId), detail: `${s.quantity} sold`, amount: "+" + money(s.revenue), date: s.date })),
+        ...data.purchases.map(p => ({ type: "purchase", title: p.name, detail: `${p.quantity} units bought`, amount: "-" + money(p.total), date: p.date }))
+      ].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
+      document.getElementById("activity").innerHTML = events.length ? events.map(e => `
+        <div class="activity-row"><div class="activity-icon">${e.type === "sale" ? "↗" : "↙"}</div>
+        <div><strong>${escapeHtml(e.title)}</strong><small>${escapeHtml(e.detail)}</small></div><div class="amount">${e.amount}</div></div>
+      `).join("") : `<div class="empty">No activity yet</div>`;
+    }
+
+    function status(i) {
+      if (i.stock === 0) return `<span class="badge out">Out of stock</span>`;
+      if (i.stock <= i.reorder) return `<span class="badge low">Low stock</span>`;
+      return `<span class="badge ok">In stock</span>`;
+    }
+    function renderInventory() {
+      const q = (document.getElementById("inventorySearch")?.value || "").toLowerCase();
+      const filtered = data.items.filter(i => `${i.name} ${i.sku} ${i.category}`.toLowerCase().includes(q));
+      document.getElementById("inventoryBody").innerHTML = filtered.length ? filtered.map(i => `
+        <tr><td><div class="item-cell"><div class="item-avatar">${escapeHtml(i.name[0])}</div><div><strong>${escapeHtml(i.name)}</strong><small>${escapeHtml(i.sku)}</small></div></div></td>
+        <td>${escapeHtml(i.category)}</td><td><strong>${i.stock}</strong></td><td>${money(i.unitCost)}</td><td>${money(i.price)}</td><td>${status(i)}</td>
+        <td><div class="row-actions"><button class="icon-btn" title="Record sale" onclick="openSale('${i.id}')">↗</button><button class="icon-btn" title="Edit" onclick="openItem('${i.id}')">•••</button></div></td></tr>
+      `).join("") : `<tr><td colspan="7" class="empty">No inventory items found</td></tr>`;
+    }
+    function renderPurchases() {
+      document.getElementById("purchasesBody").innerHTML = data.purchases.length ? data.purchases.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(p => `
+        <tr><td><strong>${escapeHtml(p.name)}</strong></td><td>${escapeHtml(itemName(p.itemId))}</td><td>${p.quantity}</td><td>${money(p.total)}</td><td>${formatDate(p.date)}</td>
+        <td><div class="row-actions"><button class="icon-btn" title="Delete" onclick="deletePurchase('${p.id}')">×</button></div></td></tr>
+      `).join("") : `<tr><td colspan="6" class="empty">No purchases recorded</td></tr>`;
+    }
+    function renderSales() {
+      document.getElementById("salesBody").innerHTML = data.sales.length ? data.sales.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(s => `
+        <tr><td><strong>Sale #${s.id.slice(-4).toUpperCase()}</strong></td><td>${escapeHtml(itemName(s.itemId))}</td><td>${s.quantity}</td><td>${money(s.revenue)}</td><td>${money(s.revenue-s.cost)}</td><td>${formatDate(s.date)}</td>
+        <td><div class="row-actions"><button class="icon-btn" title="Delete" onclick="deleteSale('${s.id}')">×</button></div></td></tr>
+      `).join("") : `<tr><td colspan="7" class="empty">No sales recorded</td></tr>`;
+    }
+    function formatDate(date) { return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"}).format(new Date(date+"T12:00:00")); }
+    function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" })[c]); }
+
+    const backdrop = document.getElementById("dialogBackdrop");
+    const form = document.getElementById("dialogForm");
+    function openDialog(title, html) {
+      document.getElementById("dialogTitle").textContent = title;
+      form.innerHTML = html;
+      backdrop.classList.add("open");
+    }
+    function closeDialog() { backdrop.classList.remove("open"); }
+    document.getElementById("closeDialog").onclick = closeDialog;
+    backdrop.onclick = e => { if (e.target === backdrop) closeDialog(); };
+
+    function openItem(id) {
+      const i = id ? data.items.find(x => x.id === id) : null;
+      openDialog(i ? "Edit item" : "Add item", `
+        <div class="form-grid">
+          <div class="field full"><label>Item name</label><input name="name" required value="${i ? escapeHtml(i.name) : ""}" placeholder="e.g. Organic Candle"></div>
+          <div class="field"><label>SKU</label><input name="sku" value="${i ? escapeHtml(i.sku) : ""}" placeholder="CAN-001"></div>
+          <div class="field"><label>Category</label><input name="category" value="${i ? escapeHtml(i.category) : ""}" placeholder="Home"></div>
+          <div class="field"><label>Stock quantity</label><input name="stock" type="number" min="0" required value="${i ? i.stock : 0}"></div>
+          <div class="field"><label>Reorder level</label><input name="reorder" type="number" min="0" required value="${i ? i.reorder : 5}"></div>
+          <div class="field"><label>Unit cost</label><input name="unitCost" type="number" min="0" step=".01" required value="${i ? i.unitCost : ""}" placeholder="0.00"></div>
+          <div class="field"><label>Sale price</label><input name="price" type="number" min="0" step=".01" required value="${i ? i.price : ""}" placeholder="0.00"></div>
+        </div><div class="form-actions">${i ? `<button type="button" class="btn danger" id="deleteItem">Delete</button>` : ""}<button type="button" class="btn" onclick="closeDialog()">Cancel</button><button type="submit" class="btn primary">${i ? "Save changes" : "Add item"}</button></div>`);
+      form.onsubmit = e => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const item = {
+          id: i?.id || "i" + Date.now(),
+          name: fd.get("name").trim(), sku: fd.get("sku").trim() || "SKU-" + String(Date.now()).slice(-4),
+          category: fd.get("category").trim() || "General", stock: Number(fd.get("stock")),
+          reorder: Number(fd.get("reorder")), unitCost: Number(fd.get("unitCost")), price: Number(fd.get("price"))
+        };
+        if (i) Object.assign(i, item); else data.items.push(item);
+        closeDialog(); save();
+      };
+      if (i) document.getElementById("deleteItem").onclick = () => {
+        if (confirm(`Delete ${i.name}?`)) { data.items = data.items.filter(x => x.id !== i.id); closeDialog(); save(); }
+      };
+    }
+
+    function openPurchase() {
+      openDialog("Record purchase", `
+        <div class="form-grid">
+          <div class="field full"><label>Purchase name</label><input name="name" required placeholder="e.g. Weekly materials"></div>
+          <div class="field full"><label>Item</label><select name="itemId">${data.items.map(i=>`<option value="${i.id}">${escapeHtml(i.name)}</option>`).join("")}</select></div>
+          <div class="field"><label>Quantity</label><input name="quantity" type="number" min="1" required value="1"></div>
+          <div class="field"><label>Total cost</label><input name="total" type="number" min="0" step=".01" required placeholder="0.00"></div>
+          <div class="field full"><label>Date</label><input name="date" type="date" required value="${new Date().toISOString().slice(0,10)}"></div>
+        </div><div class="form-actions"><button type="button" class="btn" onclick="closeDialog()">Cancel</button><button type="submit" class="btn primary">Record purchase</button></div>`);
+      form.onsubmit = e => {
+        e.preventDefault(); const fd = new FormData(form); const itemId = fd.get("itemId"); const quantity = Number(fd.get("quantity"));
+        data.purchases.push({ id:"p"+Date.now(), name:fd.get("name").trim(), itemId, quantity, total:Number(fd.get("total")), date:fd.get("date") });
+        const item = data.items.find(i=>i.id===itemId);
+        if (item) item.stock += quantity;
+        closeDialog(); save();
+      };
+    }
+    function openSale(itemId) {
+      openDialog("Record sale", `
+        <div class="form-grid">
+          <div class="field full"><label>Item</label><select name="itemId">${data.items.map(i=>`<option value="${i.id}" ${i.id===itemId?"selected":""}>${escapeHtml(i.name)} — ${i.stock} in stock</option>`).join("")}</select></div>
+          <div class="field"><label>Quantity</label><input name="quantity" type="number" min="1" required value="1"></div>
+          <div class="field"><label>Date</label><input name="date" type="date" required value="${new Date().toISOString().slice(0,10)}"></div>
+        </div><div class="form-actions"><button type="button" class="btn" onclick="closeDialog()">Cancel</button><button type="submit" class="btn primary">Record sale</button></div>`);
+      form.onsubmit = e => {
+        e.preventEffect?.();
+        e.preventDefault(); const fd = new FormData(form); const item = data.items.find(i=>i.id===fd.get("itemId")); const quantity = Number(fd.get("quantity"));
+        if (!item) return;
+        if (quantity > item.stock) { alert(`Only ${item.stock} units are available.`); return; }
+        item.stock -= quantity;
+        data.sales.push({ id:"s"+Date.now(), itemId:item.id, quantity, revenue:item.price*quantity, cost:item.unitCost*quantity, date:fd.get("date") });
+        closeDialog(); save();
+      };
+    }
+    function deletePurchase(id) { if (confirm("Delete this purchase?")) { data.purchases=data.purchases.filter(p=>p.id!==id); save(); } }
+    function deleteSale(id) { if (confirm("Delete this sale?")) { data.sales=data.sales.filter(s=>s.id!==id); save(); } }
+
+    document.querySelectorAll(".nav button").forEach(btn => btn.onclick = () => {
+      document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+      document.getElementById(btn.dataset.view).classList.add("active");
+      const title = btn.dataset.view[0].toUpperCase()+btn.dataset.view.slice(1);
+      document.getElementById("pageTitle").textContent = title;
+      document.getElementById("mainAction").innerHTML = btn.dataset.view === "dashboard" ? "<span>+ Add item</span>" :
+        btn.dataset.view === "inventory" ? "<span>+ Add item</span>" :
+        btn.dataset.view === "purchases" ? "<span>+ Add purchase</span>" : "<span>+ Record sale</span>";
+    });
+    document.getElementById("mainAction").onclick = () => {
+      const view = document.querySelector(".nav button.active").dataset.view;
+      if (view === "purchases") openPurchase(); else if (view === "sales") openSale(); else openItem();
+    };
+    document.getElementById("inventorySearch").oninput = renderInventory;
+    document.getElementById("resetBtn").onclick = () => {
+      if (confirm("Restore the demo inventory and transactions?")) { data=structuredClone(demo); save(); }
+    };
+    render();
+  </script>
+</body>
+</html>
